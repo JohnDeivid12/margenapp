@@ -1,0 +1,227 @@
+<div class="venta-container">
+  <div class="card">
+    <div class="card-header bg-gradient">
+      <h5 class="mb-0">
+        <i class="bi bi-receipt"></i> Registrar Nueva Venta
+      </h5>
+    </div>
+
+    <div class="card-body">
+      <!-- MENSAJE DE ERROR -->
+      <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> {{ error }}
+        <button type="button" class="btn-close" (click)="error = null"></button>
+      </div>
+
+      <!-- FORMULARIO -->
+      <form [formGroup]="formularioVenta" (ngSubmit)="enviarFormulario()" *ngIf="!mostrarRespuesta">
+        <div class="form-section">
+          <h6 class="section-title">📦 Producto y Cantidad</h6>
+
+          <!-- SELECTOR DE PRODUCTO -->
+          <div class="form-group mb-3">
+            <label for="producto_id" class="form-label">
+              <strong>Seleccionar Producto *</strong>
+            </label>
+            <select
+              id="producto_id"
+              class="form-select"
+              formControlName="producto_id"
+              [disabled]="cargandoProductos || cargando"
+            >
+              <option value="">-- Elige un producto --</option>
+              <option *ngFor="let prod of productos" [value]="prod.id">
+                {{ prod.nombre }} ({{ prod.categoria }}) - ${{ prod.precio.toFixed(2) }}
+              </option>
+            </select>
+            <small class="text-muted d-block mt-1">
+              <i class="bi bi-info-circle"></i> El producto debe estar registrado en el sistema
+            </small>
+          </div>
+
+          <!-- CANTIDAD -->
+          <div class="form-group mb-3">
+            <label for="cantidad" class="form-label">
+              <strong>Cantidad Vendida *</strong>
+            </label>
+            <input
+              id="cantidad"
+              type="number"
+              class="form-control"
+              formControlName="cantidad"
+              [disabled]="cargando"
+              placeholder="Ej: 5"
+              min="1"
+            />
+            <small class="text-muted d-block mt-1">
+              <i class="bi bi-info-circle"></i> Debe ser un número entero mayor a 0
+            </small>
+            <small *ngIf="formularioVenta.get('cantidad')?.hasError('required')" class="text-danger">
+              La cantidad es obligatoria
+            </small>
+            <small *ngIf="formularioVenta.get('cantidad')?.hasError('min')" class="text-danger">
+              Debe ser mayor a 0
+            </small>
+          </div>
+        </div>
+
+        <!-- SECCIÓN DE PRECIO -->
+        <div class="form-section">
+          <h6 class="section-title">💰 Precio Aplicado</h6>
+
+          <div class="form-group mb-3">
+            <label for="precio_aplicado" class="form-label">
+              <strong>Precio Unitario Aplicado *</strong>
+            </label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input
+                id="precio_aplicado"
+                type="number"
+                class="form-control"
+                formControlName="precio_aplicado"
+                [disabled]="cargando"
+                placeholder="Ej: 1150.00"
+                min="0.01"
+                step="0.01"
+              />
+            </div>
+            <small class="text-muted d-block mt-1">
+              <i class="bi bi-info-circle"></i> Puede ser diferente al precio de lista
+            </small>
+            <small *ngIf="formularioVenta.get('precio_aplicado')?.hasError('required')" class="text-danger">
+              El precio es obligatorio
+            </small>
+          </div>
+
+          <!-- RESUMEN INGRESOS -->
+          <div class="alert alert-info">
+            <strong>💵 Ingresos Estimados:</strong> ${{ calcularIngresos().toFixed(2) }}
+            <br>
+            <small>{{ formularioVenta.get('cantidad')?.value || 0 }} unidades × ${{ (formularioVenta.get('precio_aplicado')?.value || 0) }}</small>
+          </div>
+        </div>
+
+        <!-- BOTONES DE ACCIÓN -->
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            (click)="resetearFormulario()"
+            [disabled]="cargando"
+          >
+            <i class="bi bi-arrow-clockwise"></i> Limpiar
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="formularioVenta.invalid || cargando"
+          >
+            <span *ngIf="!cargando">
+              <i class="bi bi-check-circle"></i> Registrar Venta
+            </span>
+            <span *ngIf="cargando">
+              <i class="bi bi-hourglass-split"></i> Registrando...
+            </span>
+          </button>
+        </div>
+      </form>
+
+      <!-- RESPUESTA DEL SERVIDOR -->
+      <div *ngIf="mostrarRespuesta && respuesta" class="respuesta-venta">
+        <div class="card border-0">
+          <!-- ENCABEZADO CON RIESGO -->
+          <div class="card-header" [ngClass]="'bg-' + obtenerColorRiesgo(respuesta.nivel_riesgo_actualizado)">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0 text-white">
+                <i [class]="'bi bi-' + obtenerIconoRiesgo(respuesta.nivel_riesgo_actualizado)"></i>
+                Venta Registrada Exitosamente
+              </h5>
+              <button
+                type="button"
+                class="btn-close btn-close-white"
+                (click)="cerrarRespuesta()"
+              ></button>
+            </div>
+          </div>
+
+          <!-- DETALLES DE LA VENTA -->
+          <div class="card-body">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <h6 class="text-muted">
+                  <i class="bi bi-box"></i> Producto
+                </h6>
+                <p class="fw-bold">{{ obtenerProductoNombre(respuesta.producto_id) }}</p>
+              </div>
+              <div class="col-md-6">
+                <h6 class="text-muted">
+                  <i class="bi bi-calendar"></i> Fecha
+                </h6>
+                <p class="fw-bold">{{ respuesta.fecha_venta | date: 'short' }}</p>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <h6 class="text-muted">
+                  <i class="bi bi-bag"></i> Cantidad
+                </h6>
+                <p class="fw-bold">{{ respuesta.cantidad }} unidades</p>
+              </div>
+              <div class="col-md-4">
+                <h6 class="text-muted">
+                  <i class="bi bi-tag"></i> Precio Unitario
+                </h6>
+                <p class="fw-bold">${{ respuesta.precio_aplicado.toFixed(2) }}</p>
+              </div>
+              <div class="col-md-4">
+                <h6 class="text-muted">
+                  <i class="bi bi-cash-coin"></i> Total Ingresos
+                </h6>
+                <p class="fw-bold">${{ (respuesta.cantidad * respuesta.precio_aplicado).toFixed(2) }}</p>
+              </div>
+            </div>
+
+            <!-- EVALUACIÓN ACTUALIZADA -->
+            <hr>
+            <h6 class="fw-bold mb-3">📊 Análisis del Producto Actualizado</h6>
+
+            <div class="alert" [ngClass]="'alert-' + obtenerColorRiesgo(respuesta.nivel_riesgo_actualizado)">
+              <strong>Nivel de Riesgo:</strong>
+              <span class="badge" [ngClass]="'bg-' + obtenerColorRiesgo(respuesta.nivel_riesgo_actualizado)">
+                {{ respuesta.nivel_riesgo_actualizado }}
+              </span>
+            </div>
+
+            <div class="progress mb-3">
+              <div
+                class="progress-bar"
+                [ngClass]="'bg-' + obtenerColorRiesgo(respuesta.nivel_riesgo_actualizado)"
+                role="progressbar"
+                [style.width.%]="respuesta.probabilidad_riesgo_actualizado"
+              >
+                {{ respuesta.probabilidad_riesgo_actualizado.toFixed(1) }}%
+              </div>
+            </div>
+
+            <p class="alert alert-light">
+              <strong>Recomendación:</strong> {{ respuesta.mensaje }}
+            </p>
+          </div>
+
+          <!-- BOTONES DE CIERRE -->
+          <div class="card-footer bg-light d-grid gap-2">
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="resetearFormulario(); cerrarRespuesta()"
+            >
+              <i class="bi bi-plus-circle"></i> Registrar Otra Venta
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
