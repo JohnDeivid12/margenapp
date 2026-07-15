@@ -1,0 +1,244 @@
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-lg-6">
+      <!-- FORMULARIO -->
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">📝 Crear Nuevo Producto</h4>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="enviarFormulario()" class="card-body">
+          
+          <!-- Campo: Nombre -->
+          <div class="form-group mb-3">
+            <label for="nombre" class="form-label">Nombre del Producto *</label>
+            <input
+              id="nombre"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="tieneError('nombre', 'required')"
+              formControlName="nombre"
+              placeholder="ej: Laptop Dell XPS 13"
+              maxlength="100"
+            />
+            <small class="form-text text-muted">
+              Máximo 100 caracteres
+            </small>
+            <div class="invalid-feedback" *ngIf="tieneError('nombre', 'required')">
+              {{ obtenerMensajeError('nombre') }}
+            </div>
+          </div>
+
+          <!-- Campo: Categoría -->
+          <div class="form-group mb-3">
+            <label for="categoria" class="form-label">Categoría *</label>
+            <input
+              id="categoria"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="tieneError('categoria', 'required')"
+              formControlName="categoria"
+              placeholder="ej: Electrónica"
+              maxlength="50"
+            />
+            <small class="form-text text-muted">
+              Máximo 50 caracteres
+            </small>
+            <div class="invalid-feedback" *ngIf="tieneError('categoria', 'required')">
+              {{ obtenerMensajeError('categoria') }}
+            </div>
+          </div>
+
+          <!-- Campo: Precio -->
+          <div class="form-group mb-3">
+            <label for="precio" class="form-label">Precio (USD) *</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input
+                id="precio"
+                type="number"
+                class="form-control"
+                [class.is-invalid]="tieneError('precio', 'required') || tieneError('precio', 'min')"
+                formControlName="precio"
+                placeholder="1200.00"
+                step="0.01"
+                min="0"
+              />
+            </div>
+            <small class="form-text text-muted">
+              Debe ser mayor a $0
+            </small>
+            <div class="invalid-feedback" 
+              *ngIf="tieneError('precio', 'required') || tieneError('precio', 'min')">
+              {{ obtenerMensajeError('precio') }}
+            </div>
+          </div>
+
+          <!-- Campo: Margen Objetivo -->
+          <div class="form-group mb-3">
+            <label for="margen" class="form-label">Margen Objetivo (%)*</label>
+            <div class="input-group">
+              <input
+                id="margen"
+                type="number"
+                class="form-control"
+                [class.is-invalid]="tieneError('margen_objetivo', 'required') || 
+                                   tieneError('margen_objetivo', 'min') || 
+                                   tieneError('margen_objetivo', 'max')"
+                formControlName="margen_objetivo"
+                placeholder="0.20"
+                step="0.01"
+                min="0"
+                max="1"
+              />
+              <span class="input-group-text">%</span>
+            </div>
+            <small class="form-text text-muted">
+              Entre 0 y 100% (ej: 0.20 = 20%, 0.50 = 50%)
+            </small>
+            <div class="invalid-feedback" 
+              *ngIf="tieneError('margen_objetivo', 'required') || 
+                     tieneError('margen_objetivo', 'min') ||
+                     tieneError('margen_objetivo', 'max')">
+              {{ obtenerMensajeError('margen_objetivo') }}
+            </div>
+          </div>
+
+          <!-- Campo: Cantidad Inicial -->
+          <div class="form-group mb-4">
+            <label for="cantidad" class="form-label">Cantidad Inicial (opcional)</label>
+            <input
+              id="cantidad"
+              type="number"
+              class="form-control"
+              [class.is-invalid]="tieneError('cantidad_inicial', 'min')"
+              formControlName="cantidad_inicial"
+              placeholder="10"
+              min="0"
+            />
+            <small class="form-text text-muted">
+              Cantidad inicial en inventario (por defecto: 0)
+            </small>
+          </div>
+
+          <!-- Botones -->
+          <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="form.invalid || cargando"
+            >
+              <span *ngIf="!cargando">🚀 Crear Producto</span>
+              <span *ngIf="cargando">
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                Guardando...
+              </span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="resetarFormulario()"
+              [disabled]="cargando"
+            >
+              🔄 Limpiar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- RESPUESTA Y RESULTADOS -->
+    <div class="col-lg-6">
+      
+      <!-- Error -->
+      <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <h4 class="alert-heading">❌ Error</h4>
+        <p class="mb-0">{{ error }}</p>
+        <button type="button" class="btn-close" (click)="error = null"></button>
+      </div>
+
+      <!-- Respuesta Exitosa -->
+      <div *ngIf="mostrarRespuesta && respuesta" class="card border-success">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">✅ Producto Creado Exitosamente</h5>
+        </div>
+
+        <div class="card-body">
+          
+          <!-- Datos del Producto -->
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <strong>ID:</strong>
+              <p class="text-muted">{{ respuesta.id }}</p>
+            </div>
+            <div class="col-md-6">
+              <strong>Nombre:</strong>
+              <p class="text-muted">{{ respuesta.nombre }}</p>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <strong>Categoría:</strong>
+              <p class="text-muted">{{ respuesta.categoria }}</p>
+            </div>
+            <div class="col-md-6">
+              <strong>Precio:</strong>
+              <p class="text-muted">${{ respuesta.precio | number:'1.2-2' }}</p>
+            </div>
+          </div>
+
+          <hr />
+
+          <!-- Análisis de Riesgo -->
+          <h6 class="mb-3">📊 Evaluación de Riesgo</h6>
+
+          <div class="alert" [class]="'alert-' + obtenerColorRiesgo()">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <h4 class="mb-1">
+                  {{ obtenerIconoRiesgo() }} Nivel de Riesgo: 
+                  <strong>{{ respuesta.nivel_riesgo }}</strong>
+                </h4>
+                <p class="mb-0 small">
+                  Probabilidad: {{ respuesta.probabilidad_riesgo | number:'1.1-1' }}%
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Margen -->
+          <div class="mb-3">
+            <strong>Margen Objetivo:</strong>
+            <div class="progress" style="height: 25px;">
+              <div
+                class="progress-bar"
+                [style.width.%]="respuesta.margen_objetivo * 100"
+                role="progressbar"
+              >
+                {{ formatearMargen(respuesta.margen_objetivo) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Recomendación -->
+          <div class="alert alert-info">
+            <strong>💡 Recomendación:</strong>
+            <p class="mb-0 mt-2">{{ respuesta.mensaje }}</p>
+          </div>
+
+          <!-- Fecha -->
+          <small class="text-muted">
+            <strong>Creado:</strong> {{ respuesta.fecha_creacion | date:'short' }}
+          </small>
+        </div>
+
+        <div class="card-footer bg-light">
+          <button class="btn btn-outline-primary btn-sm" (click)="resetarFormulario()">
+            ➕ Crear Otro Producto
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
