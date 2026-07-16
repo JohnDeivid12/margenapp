@@ -104,3 +104,9 @@ class AnálisisProductoResponse(BaseModel):
     nivel_riesgo: str
     probabilidad_riesgo: float
     recomendacion: str
+
+class ProductoUpdate(BaseModel):
+    nombre: str = Field(..., max_length=150)
+    categoria: str = Field(..., max_length=100)
+    precio: float = Field(..., gt=0)
+    margen_objetivo: float = Field(..., ge=0, le=1)  # Entre 0.0 y 1.0 (ej: 0.20 para 20%)

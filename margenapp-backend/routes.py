@@ -102,6 +102,81 @@ def listar_productos():
             detail=f"Error al listar productos: {str(e)}"
         )
 
+# ============================================================================
+# NUEVO ENDPOINT: EDITAR PRODUCTO (PUT)
+# ============================================================================
+@router_productos.put("/{producto_id}", status_code=status.HTTP_200_OK)
+def editar_producto(producto_id: int, producto_data: ProductoCreate):
+    """
+    ✏️ Edita los datos de un producto y actualiza en caliente el análisis de riesgo
+    """
+    try:
+        from database import DatabaseConnection, ProductoRepository
+        conn = DatabaseConnection.obtener_conexion()
+        
+        # 1. Verificar si el producto existe
+        if not ProductoRepository.obtener_por_id(conn, producto_id):
+            conn.close()
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Producto no encontrado"
+            )
+        
+        # 2. Actualizar el producto (el repositorio internamente recalcula la IA)
+        ProductoRepository.actualizar(
+            conn=conn,
+            producto_id=producto_id,
+            nombre=producto_data.nombre,
+            categoria=producto_data.categoria,
+            precio=producto_data.precio,
+            margen_objetivo=producto_data.margen_objetivo
+        )
+        conn.close()
+        
+        return {"message": "Producto actualizado con éxito y métricas recalculadas"}
+        
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error al actualizar el producto: {str(e)}"
+        )
+
+
+# ============================================================================
+# NUEVO ENDPOINT: ELIMINAR PRODUCTO (DELETE)
+# ============================================================================
+@router_productos.delete("/{producto_id}", status_code=status.HTTP_200_OK)
+def eliminar_producto(producto_id: int):
+    """
+    🗑️ Elimina permanentemente un producto de la base de datos
+    """
+    try:
+        from database import DatabaseConnection, ProductoRepository
+        conn = DatabaseConnection.obtener_conexion()
+        
+        # 1. Verificar si el producto existe
+        if not ProductoRepository.obtener_por_id(conn, producto_id):
+            conn.close()
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Producto no encontrado"
+            )
+        
+        # 2. Ejecutar la eliminación
+        ProductoRepository.eliminar(conn, producto_id)
+        conn.close()
+        
+        return {"message": f"Producto con ID {producto_id} eliminado exitosamente"}
+        
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error de integridad o base de datos al eliminar: {str(e)}"
+        )
 
 # ============================================================================
 # ENDPOINTS DE VENTAS

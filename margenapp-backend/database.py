@@ -24,7 +24,7 @@ class DatabaseConnection:
             )
 
 
-class ProductoRepository:
+class _ProductoRepositoryDuplicado:
     """Operaciones CRUD para productos"""
     
     @staticmethod
@@ -105,6 +105,79 @@ class ProductoRepository:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error al obtener producto: {str(e)}"
+            )
+
+    # =========================================================================
+    # ACTUALIZAR PRODUCTO (Y RECALCULAR ANÁLISIS)
+    # =========================================================================
+    @staticmethod
+    def actualizar(conn, producto_id: int, nombre: str, categoria: str, precio: float, margen_objetivo: float):
+        """Actualiza un producto y recalcula su análisis financiero en caliente"""
+        try:
+            cursor = conn.cursor()
+            query = """
+                UPDATE productos
+                SET nombre = %s, categoria = %s, precio = %s, margen_objetivo = %s
+                WHERE id = %s;
+            """
+            cursor.execute(query, (nombre, categoria, precio, margen_objetivo, producto_id))
+            conn.commit()
+            cursor.close()
+
+            # Recalcular métricas simples con ventas existentes
+            total_unidades, ingresos_totales = VentaRepository.obtener_metricas_por_producto(conn, producto_id)
+            costo_implicito = float(precio) * (1.0 - float(margen_objetivo))
+
+            if total_unidades > 0:
+                precio_promedio = float(ingresos_totales) / float(total_unidades)
+                margen_real = (precio_promedio - costo_implicito) / precio_promedio if precio_promedio > 0 else float(margen_objetivo)
+            else:
+                precio_promedio = float(precio)
+                margen_real = float(margen_objetivo)
+
+            if margen_real >= float(margen_objetivo):
+                nivel_riesgo = "BAJO"
+                recomendacion = "✅ Riesgo bajo. Margen saludable y ventas estables. Mantener estrategia de precios."
+            elif margen_real >= 0.05:
+                nivel_riesgo = "MEDIO"
+                recomendacion = "⚠️ Riesgo moderado por desviación de margen. Evaluar costos y limitar descuentos adicionales."
+            else:
+                nivel_riesgo = "ALTO"
+                recomendacion = "🚨 Riesgo alto. Rentabilidad crítica. Se recomienda ajustar margen o renegociar costos con proveedores."
+
+            AnálisisRepository.guardar_o_actualizar(
+                conn,
+                producto_id=producto_id,
+                precio_promedio=float(precio_promedio),
+                variacion=0.0,
+                margen=float(margen_real),
+                riesgo=nivel_riesgo,
+                recomendacion=recomendacion,
+            )
+
+        except psycopg2.Error as e:
+            conn.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al actualizar el producto: {str(e)}"
+            )
+
+    # =========================================================================
+    # ELIMINAR PRODUCTO
+    # =========================================================================
+    @staticmethod
+    def eliminar(conn, producto_id: int):
+        """Elimina físicamente un producto por su ID"""
+        try:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM productos WHERE id = %s;", (producto_id,))
+            conn.commit()
+            cursor.close()
+        except psycopg2.Error as e:
+            conn.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al eliminar el producto (Verifique claves foráneas): {str(e)}"
             )
 
 
@@ -281,3 +354,101 @@ class AnálisisRepository:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error al obtener análisis: {str(e)}"
             )
+            
+class ProductoRepository:
+    """Operaciones CRUD para productos"""
+    
+    @staticmethod
+    def crear(conn, nombre: str, categoria: str, precio: float, margen_objetivo: float) -> int:
+        # ... (tu código original, no lo toques)
+        pass
+
+    @staticmethod
+    def obtener_todos(conn) -> List[Dict]:
+        # ... (tu código original, no lo toques)
+        pass
+
+    @staticmethod
+    def obtener_por_id(conn, producto_id: int) -> Optional[Dict]:
+        # ... (tu código original, no lo toques)
+        pass
+
+    @staticmethod
+    def obtener_precio_y_margen(conn, producto_id: int) -> tuple:
+        # ... (tu código original, no lo toques)
+        pass
+
+    # =========================================================================
+    # ACTUALIZAR PRODUCTO (Y RECALCULAR INTEGRACIÓN CON IA)
+    # =========================================================================
+    @staticmethod
+    def actualizar(conn, producto_id: int, nombre: str, categoria: str, precio: float, margen_objetivo: float):
+        """Actualiza los datos base de un producto y recalcula de inmediato su análisis financiero"""
+        try:
+            cursor = conn.cursor()
+            query = """
+                UPDATE productos 
+                SET nombre = %s, categoria = %s, precio = %s, margen_objetivo = %s
+                WHERE id = %s;
+            """
+            cursor.execute(query, (nombre, categoria, precio, margen_objetivo, producto_id))
+            conn.commit()
+            cursor.close()
+
+            # --- RECALCULO EN CALIENTE TRAS LA EDICIÓN ---
+            total_unidades, ingresos_totales = VentaRepository.obtener_metricas_por_producto(conn, producto_id)
+            costo_implicito = precio * (1.0 - margen_objetivo)
+
+            if total_unidades > 0:
+                precio_promedio = ingresos_totales / total_unidades
+                margen_real = (precio_promedio - costo_implicito) / precio_promedio
+            else:
+                precio_promedio = precio
+                margen_real = margen_objetivo
+
+            if margen_real >= margen_objetivo:
+                nivel_riesgo = "BAJO"
+                recomendacion = "✅ Riesgo bajo. Margen saludable y ventas estables. Mantener estrategia de precios."
+            elif margen_real < margen_objetivo and margen_real >= 0.05:
+                nivel_riesgo = "MEDIO"
+                recomendacion = "⚠️ Riesgo moderado por desviación de margen. Evaluar costos de adquisición y limitar descuentos adicionales."
+            else:
+                nivel_riesgo = "ALTO"
+                recomendacion = "🚨 Riesgo alto. Rentabilidad crítica por debajo del umbral óptimo. Se recomienda subir margen objetivo o renegociar costos con proveedores de inmediato."
+
+            AnálisisRepository.guardar_o_actualizar(
+                conn, 
+                producto_id=producto_id,
+                precio_promedio=precio_promedio,
+                variacion=0.0,
+                margen=margen_real,
+                riesgo=nivel_riesgo,
+                recomendacion=recomendacion
+            )
+
+        except psycopg2.Error as e:
+            conn.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al actualizar el producto: {str(e)}"
+            )
+
+    # =========================================================================
+    # ELIMINAR PRODUCTO
+    # =========================================================================
+    @staticmethod
+    def eliminar(conn, producto_id: int):
+        """Elimina físicamente un producto por su ID de la base de datos"""
+        try:
+            cursor = conn.cursor()
+            query = "DELETE FROM productos WHERE id = %s;"
+            cursor.execute(query, (producto_id,))
+            conn.commit()
+            cursor.close()
+        except psycopg2.Error as e:
+            conn.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al eliminar el producto (Verifique claves foráneas): {str(e)}"
+            )
+

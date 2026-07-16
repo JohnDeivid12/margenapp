@@ -119,6 +119,19 @@ export class ProductoService {
     );
   }
 
+ // ✅ Corregido — genera http://localhost:8000/api/productos/1
+actualizarProducto(id: number, productoData: any): Observable<any> {
+  return this.http.put(`${this.apiUrl}/productos/${id}`, productoData).pipe(
+    catchError(this.handleError)
+  );
+}
+
+eliminarProducto(id: number): Observable<any> {
+  return this.http.delete(`${this.apiUrl}/productos/${id}`).pipe(
+    catchError(this.handleError)
+  );
+}
+
   // ============================================================================
   // MÉTODOS DE VENTAS
   // ============================================================================

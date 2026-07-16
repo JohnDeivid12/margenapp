@@ -74,6 +74,20 @@
     </div>
   </div>
 
+<!-- Formulario de Edición de Producto -->
+<div *ngIf="mostrarFormularioEdicion" class="mb-4">
+  <app-editar-producto 
+    [producto]="productoSeleccionado"
+    (productoEditado)="onProductoEditado($event)"
+    (cancel)="cerrarEdicion()">
+  </app-editar-producto>
+  <div class="mt-2">
+    <button class="btn btn-secondary" (click)="cerrarEdicion()">
+      ✕ Cerrar
+    </button>
+  </div>
+</div>
+
   <div class="row mb-4">
     <div class="col-md-4">
       <div class="card bg-danger text-white shadow">
@@ -147,6 +161,20 @@
               }">
                 {{ prod.nivel_riesgo }}
               </span>
+            </td>
+            <td class="text-center" (click)="$event.stopPropagation()">
+              <div class="d-flex justify-content-center gap-2">
+                <button class="btn btn-outline-warning btn-sm" 
+                        (click)="abrirEdicion(prod)" 
+                        title="Editar parámetros del producto">
+                  ✏️ Editar
+                </button>
+                <button class="btn btn-outline-danger btn-sm"
+                        (click)="eliminarProducto(prod)"
+                        title="Eliminar producto">
+                  🗑️ Eliminar
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
