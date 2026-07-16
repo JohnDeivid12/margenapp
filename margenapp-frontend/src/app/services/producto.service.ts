@@ -213,7 +213,7 @@ eliminarProducto(id: number): Observable<any> {
       } else if (error.status === 500) {
         errorMessage = error.error?.detail || 'Error interno del servidor';
       } else if (error.status === 404) {
-        errorMessage = 'Recurso no encontrado';
+        errorMessage = error.error?.detail || 'Recurso no encontrado';
       } else {
         errorMessage = `Error ${error.status}: ${error.statusText}`;
       }

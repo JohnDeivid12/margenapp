@@ -49,7 +49,8 @@ export class EditarProductoComponent implements OnInit, OnChanges {
       this.form.patchValue({
         nombre: this.producto.nombre,
         categoria: this.producto.categoria,
-        precio: this.producto.precio,
+        // El análisis puede traer precio o precio_promedio
+        precio: this.producto.precio ?? this.producto.precio_promedio,
         margen_objetivo: this.producto.margen_objetivo
       });
     }
