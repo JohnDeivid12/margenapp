@@ -1,19 +1,29 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { ProductoAnalisis } from '../modelos/producto-analisis.model';
 import { DashboardService } from '../services/dashboard.service';
 import { CrearProductoComponent } from '../components/crear-producto/crear-producto.component';
 import { RegistrarVentaComponent } from '../components/registrar-venta/registrar-venta.component';
+import { HistorialVentasComponent } from '../components/historial-ventas/historial-ventas';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DecimalPipe, CrearProductoComponent, RegistrarVentaComponent],
+  imports: [
+    CommonModule, 
+    DecimalPipe, 
+    CrearProductoComponent, 
+    RegistrarVentaComponent,
+    HistorialVentasComponent
+  ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
 })
 export class DashboardComponent implements OnInit {
   productos: ProductoAnalisis[] = [];
+
+  // Control para la Pantalla de Bienvenida Inicial
+  mostrarBienvenida = true;
 
   // Contadores para las tarjetas del tope
   totalAlto: number = 0;
@@ -27,18 +37,26 @@ export class DashboardComponent implements OnInit {
   // Propiedad para el producto seleccionado (inicialmente null)
   productoSeleccionado: any = null;
 
+  // Referencia para comunicarnos con el componente de historial y recargarlo
+  @ViewChild(HistorialVentasComponent) historialComponent!: HistorialVentasComponent;
+
   constructor(private dashboardService: DashboardService) { }
 
   ngOnInit(): void {
     this.cargarAnalisis();
   }
 
+  /**
+   * Cierra la pantalla de bienvenida y da paso al panel principal
+   */
+  entrarAlApp(): void {
+    this.mostrarBienvenida = false;
+  }
+
   cargarAnalisis(): void {
     this.dashboardService.obtenerAnalisisRiesgo().subscribe({
       next: (res: any) => {
         // 1. Validamos de dónde viene el arreglo.
-        // Si la respuesta es un arreglo directo, lo asignamos. 
-        // Si viene envuelto en un objeto (ej: res.productos), tomamos esa propiedad.
         if (Array.isArray(res)) {
           this.productos = res;
         } else if (res && Array.isArray(res.productos)) {
@@ -114,10 +132,15 @@ export class DashboardComponent implements OnInit {
   }
 
   /**
-   * Recarga los datos después de registrar una venta
+   * Recarga los datos después de registrar una venta e inyecta la actualización al historial
    */
   onVentaRegistrada(): void {
     this.cargarAnalisis();
     this.mostrarFormularioVenta = false;
+    
+    // Si el componente de historial existe, le ordenamos refrescar la tabla de inmediato
+    if (this.historialComponent) {
+      this.historialComponent.obtenerHistorial();
+    }
   }
 }
