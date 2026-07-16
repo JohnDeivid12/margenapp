@@ -1,10 +1,15 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ProductoAnalisis } from '../modelos/producto-analisis.model';
 import { DashboardService } from '../services/dashboard.service';
 import { CrearProductoComponent } from '../components/crear-producto/crear-producto.component';
 import { RegistrarVentaComponent } from '../components/registrar-venta/registrar-venta.component';
 import { HistorialVentasComponent } from '../components/historial-ventas/historial-ventas';
+
+// Importaciones necesarias para Gráficas
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration, ChartOptions } from 'chart.js';
 
 @Component({
   selector: 'app-dashboard',
@@ -12,9 +17,11 @@ import { HistorialVentasComponent } from '../components/historial-ventas/histori
   imports: [
     CommonModule, 
     DecimalPipe, 
+    FormsModule,
     CrearProductoComponent, 
     RegistrarVentaComponent,
-    HistorialVentasComponent
+    HistorialVentasComponent,
+    BaseChartDirective
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
@@ -22,22 +29,26 @@ import { HistorialVentasComponent } from '../components/historial-ventas/histori
 export class DashboardComponent implements OnInit {
   productos: ProductoAnalisis[] = [];
 
-  // Control para la Pantalla de Bienvenida Inicial
   mostrarBienvenida = true;
 
-  // Contadores para las tarjetas del tope
   totalAlto: number = 0;
   totalMedio: number = 0;
   totalBajo: number = 0;
 
-  // Para mostrar/ocultar los formularios
   mostrarFormularioProducto = false;
   mostrarFormularioVenta = false;
-
-  // Propiedad para el producto seleccionado (inicialmente null)
   productoSeleccionado: any = null;
 
-  // Referencia para comunicarnos con el componente de historial y recargarlo
+  // --- CONFIGURACIÓN DE LA GRÁFICA ---
+  public chartOptions: ChartOptions<'doughnut'> = { responsive: true };
+  public chartData: ChartConfiguration<'doughnut'>['data'] = {
+    labels: ['Riesgo Alto', 'Riesgo Medio', 'Riesgo Bajo'],
+    datasets: [{ 
+      data: [0, 0, 0], 
+      backgroundColor: ['#dc3545', '#ffc107', '#198754'] 
+    }]
+  };
+
   @ViewChild(HistorialVentasComponent) historialComponent!: HistorialVentasComponent;
 
   constructor(private dashboardService: DashboardService) { }
@@ -46,9 +57,6 @@ export class DashboardComponent implements OnInit {
     this.cargarAnalisis();
   }
 
-  /**
-   * Cierra la pantalla de bienvenida y da paso al panel principal
-   */
   entrarAlApp(): void {
     this.mostrarBienvenida = false;
   }
@@ -56,7 +64,6 @@ export class DashboardComponent implements OnInit {
   cargarAnalisis(): void {
     this.dashboardService.obtenerAnalisisRiesgo().subscribe({
       next: (res: any) => {
-        // 1. Validamos de dónde viene el arreglo.
         if (Array.isArray(res)) {
           this.productos = res;
         } else if (res && Array.isArray(res.productos)) {
@@ -64,9 +71,8 @@ export class DashboardComponent implements OnInit {
         } else if (res && Array.isArray(res.data)) {
           this.productos = res.data;
         } else {
-          this.productos = []; // Evitamos que sea null o undefined
+          this.productos = [];
         }
-        // 2. Ahora sí calculamos los contadores de forma segura
         this.calcularContadores();
       },
       error: (err) => {
@@ -76,7 +82,6 @@ export class DashboardComponent implements OnInit {
   }
 
   calcularContadores(): void {
-    // Si por alguna razón productos no es un arreglo válido, detenemos la ejecución
     if (!Array.isArray(this.productos)) {
       this.totalAlto = 0;
       this.totalMedio = 0;
@@ -84,61 +89,43 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    // Ahora filtramos directamente con la propiedad oficial 'nivel_riesgo'
     this.totalAlto = this.productos.filter(p => p.nivel_riesgo === 'ALTO').length;
     this.totalMedio = this.productos.filter(p => p.nivel_riesgo === 'MEDIO').length;
     this.totalBajo = this.productos.filter(p => p.nivel_riesgo === 'BAJO').length;
+
+    // IMPORTANTE: Esta línea actualiza el gráfico cada vez que cambian los contadores
+    this.chartData.datasets[0].data = [this.totalAlto, this.totalMedio, this.totalBajo];
   }
 
-  // Crear la función para seleccionar el producto a analizar
   seleccionarProducto(producto: any): void {
     this.productoSeleccionado = producto;
   }
 
-  /**
-   * Alterna la visibilidad del formulario de creación de productos
-   */
   toggleFormularioProducto(): void {
     this.mostrarFormularioProducto = !this.mostrarFormularioProducto;
   }
 
-  /**
-   * Alterna la visibilidad del formulario de registro de ventas
-   */
   toggleFormularioVenta(): void {
     this.mostrarFormularioVenta = !this.mostrarFormularioVenta;
   }
 
-  /**
-   * Cierra el formulario de creación de productos
-   */
   cerrarFormularioProducto(): void {
     this.mostrarFormularioProducto = false;
   }
 
-  /**
-   * Cierra el formulario de registro de ventas
-   */
   cerrarFormularioVenta(): void {
     this.mostrarFormularioVenta = false;
   }
 
-  /**
-   * Recarga los datos después de crear un producto
-   */
   onProductoCreado(): void {
     this.cargarAnalisis();
     this.mostrarFormularioProducto = false;
   }
 
-  /**
-   * Recarga los datos después de registrar una venta e inyecta la actualización al historial
-   */
   onVentaRegistrada(): void {
     this.cargarAnalisis();
     this.mostrarFormularioVenta = false;
     
-    // Si el componente de historial existe, le ordenamos refrescar la tabla de inmediato
     if (this.historialComponent) {
       this.historialComponent.obtenerHistorial();
     }
