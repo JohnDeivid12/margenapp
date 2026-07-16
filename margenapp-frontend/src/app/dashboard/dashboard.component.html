@@ -10,7 +10,7 @@
       <p class="subtitulo">Asistente de Monitoreo de Márgenes de Utilidad y Alertas de Riesgo</p>
     </div>
     
-    <hr class="divisor">
+    <hr class="divisor"> 
 
     <div class="bienvenida-section">
       <h2>¿Qué hace MargenApp?</h2>
@@ -73,6 +73,20 @@
       </button>
     </div>
   </div>
+
+<!-- Formulario de Edición de Producto -->
+<div *ngIf="mostrarFormularioEdicion" class="mb-4">
+  <app-editar-producto 
+    [producto]="productoSeleccionado"
+    (productoUpdated)="onProductoEditado($event)"
+    (cancel)="cerrarEdicion()">
+  </app-editar-producto>
+  <div class="mt-2">
+    <button class="btn btn-secondary" (click)="cerrarEdicion()">
+      ✕ Cerrar
+    </button>
+  </div>
+</div>
 
   <!-- TARJETAS Y GRÁFICA -->
   <div class="row mb-4">
@@ -156,6 +170,20 @@
               }">
                 {{ prod.nivel_riesgo }}
               </span>
+            </td>
+            <td class="text-center" (click)="$event.stopPropagation()">
+              <div class="d-flex justify-content-center gap-2">
+                <button class="btn btn-outline-warning btn-sm" 
+                        (click)="abrirEdicion(prod)" 
+                        title="Editar parámetros del producto">
+                  ✏️ Editar
+                </button>
+                <button class="btn btn-outline-danger btn-sm"
+                        (click)="eliminarProducto(prod)"
+                        title="Eliminar producto">
+                  🗑️ Eliminar
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

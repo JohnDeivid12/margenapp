@@ -3,9 +3,12 @@ import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductoAnalisis } from '../modelos/producto-analisis.model';
 import { DashboardService } from '../services/dashboard.service';
+import { ProductoService } from '../services/producto.service';
 import { CrearProductoComponent } from '../components/crear-producto/crear-producto.component';
 import { RegistrarVentaComponent } from '../components/registrar-venta/registrar-venta.component';
 import { HistorialVentasComponent } from '../components/historial-ventas/historial-ventas';
+import { EditarProductoComponent } from '../components/editar-producto/editar-producto.component';
+  
 
 // Importaciones necesarias para Gráficas
 import { BaseChartDirective } from 'ng2-charts';
@@ -21,6 +24,7 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
     CrearProductoComponent, 
     RegistrarVentaComponent,
     HistorialVentasComponent,
+    EditarProductoComponent,
     BaseChartDirective
   ],
   templateUrl: './dashboard.component.html',
@@ -37,6 +41,11 @@ export class DashboardComponent implements OnInit {
 
   mostrarFormularioProducto = false;
   mostrarFormularioVenta = false;
+
+  // <-- 3. Control de visibilidad para el formulario de edición
+  mostrarFormularioEdicion = false;
+
+  // Propiedad para el producto seleccionado (inicialmente null)
   productoSeleccionado: any = null;
 
   // --- CONFIGURACIÓN DE LA GRÁFICA ---
@@ -51,7 +60,10 @@ export class DashboardComponent implements OnInit {
 
   @ViewChild(HistorialVentasComponent) historialComponent!: HistorialVentasComponent;
 
-  constructor(private dashboardService: DashboardService) { }
+  constructor(
+    private dashboardService: DashboardService,
+    private productoService: ProductoService
+  ) { }
 
   ngOnInit(): void {
     this.cargarAnalisis();
@@ -129,5 +141,54 @@ export class DashboardComponent implements OnInit {
     if (this.historialComponent) {
       this.historialComponent.obtenerHistorial();
     }
+  }
+
+  abrirEdicion(producto: any): void {
+    this.productoSeleccionado = producto;
+    this.mostrarFormularioEdicion = true;
+    
+    // Si tienes abiertos los otros formularios, los cerramos para no saturar la UI
+    this.mostrarFormularioProducto = false;
+    this.mostrarFormularioVenta = false;
+  }
+
+  /**
+   * Cierra el panel de edición limpiando el producto activo
+   */
+  cerrarEdicion(): void {
+    this.mostrarFormularioEdicion = false;
+    this.productoSeleccionado = null;
+  }
+
+  /**
+   * Se ejecuta cuando el componente hijo termina la petición PUT con éxito
+   */
+  onProductoEditado(response: any): void {
+    this.cargarAnalisis(); // Recarga los datos en caliente desde PostgreSQL (recalculando IA)
+    this.cerrarEdicion();  // Cierra el formulario de edición
+  }
+
+  eliminarProducto(producto: any): void {
+    if (!producto?.id) return;
+
+    const ok = window.confirm(`¿Seguro que deseas eliminar "${producto.nombre}"? Esta acción no se puede deshacer.`);
+    if (!ok) return;
+
+    this.productoService.eliminarProducto(producto.id).subscribe({
+      next: () => {
+        if (this.productoSeleccionado?.id === producto.id) {
+          this.productoSeleccionado = null;
+          this.mostrarFormularioEdicion = false;
+        }
+        this.cargarAnalisis();
+        if (this.historialComponent) {
+          this.historialComponent.obtenerHistorial();
+        }
+      },
+      error: (err) => {
+        console.error('Error al eliminar producto', err);
+        alert(err?.message || 'Error al eliminar el producto');
+      }
+    });
   }
 }
