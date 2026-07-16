@@ -1,0 +1,108 @@
+/* Contenedor que centra la bienvenida */
+.bienvenida-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 85vh;
+  padding: 20px;
+  background-color: #f8f9fa;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* Tarjeta de bienvenida */
+.bienvenida-card {
+  background: #ffffff;
+  border-radius: 14px;
+  max-width: 680px;
+  width: 100%;
+  padding: 40px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.bienvenida-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.icono-ia {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.bienvenida-header h1 {
+  font-size: 2.2rem;
+  color: #212529;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.bienvenida-header .marca {
+  color: #0d6efd; /* Tu color azul primario */
+}
+
+.subtitulo {
+  color: #6c757d;
+  font-size: 1.05rem;
+}
+
+.divisor {
+  border-top: 1px solid #dee2e6;
+  margin: 25px 0;
+}
+
+.bienvenida-section {
+  margin-bottom: 24px;
+}
+
+.bienvenida-section h3 {
+  font-size: 1.2rem;
+  color: #212529;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.bienvenida-section p {
+  color: #495057;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.lista-instrucciones {
+  padding-left: 20px;
+}
+
+.lista-instrucciones li {
+  color: #495057;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.boton-zona {
+  text-align: center;
+  margin-top: 35px;
+}
+
+/* Botón estilo "Nueva Venta" pero adaptado */
+.btn-entrar {
+  background-color: #198754; /* Verde oficial Bootstrap */
+  color: white;
+  padding: 14px 35px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-entrar:hover {
+  background-color: #157347;
+  transform: scale(1.02);
+}
+
+.btn-entrar:active {
+  transform: scale(0.98);
+}

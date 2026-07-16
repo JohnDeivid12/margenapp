@@ -1,4 +1,46 @@
-<div class="container mt-4">
+<!-- ========================================== -->
+<!-- 1. PANTALLA DE INICIO (Se muestra al principio) -->
+<!-- ========================================== -->
+<div *ngIf="mostrarBienvenida" class="bienvenida-container">
+  <div class="bienvenida-card">
+    
+    <div class="bienvenida-header">
+      <span class="icono-ia">🤖</span>
+      <h1>Bienvenido a <span class="marca">MargenApp</span></h1>
+      <p class="subtitulo">Asistente de Monitoreo de Márgenes de Utilidad y Alertas de Riesgo</p>
+    </div>
+    
+    <hr class="divisor">
+
+    <div class="bienvenida-section">
+      <h2>¿Qué hace MargenApp?</h2>
+      <p>
+        Es una herramienta diseñada para monitorear en tiempo real los márgenes de utilidad de tus productos, evaluando el comportamiento de las ventas y alertando de forma inteligente sobre posibles riesgos de pérdida mediante IA.
+      </p>
+    </div>
+
+    <div class="bienvenida-section">
+      <h2>¿Cómo usar la aplicación?</h2>
+      <ul class="lista-instrucciones">
+        <li><strong>Crear Productos:</strong> Registra tus productos con su respectiva categoría y margen objetivo.</li>
+        <li><strong>Registrar Ventas:</strong> Almacena cada transacción diaria para calcular los márgenes reales del negocio.</li>
+        <li><strong>Evaluar Alertas:</strong> Revisa el semáforo de riesgo (Bajo, Medio, Alto) para tomar decisiones inmediatas.</li>
+      </ul>
+    </div>
+
+    <div class="boton-zona">
+      <button class="btn-entrar" (click)="entrarAlApp()">
+        Ingresar al Panel de Control 
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- 2. TU PANEL DE CONTROL (Tal como lo tenías) -->
+<!-- ========================================== -->
+<div *ngIf="!mostrarBienvenida" class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-cpu"></i> MargenApp - Panel de Control IA</h2>
     <div class="btn-group" role="group">
@@ -87,27 +129,27 @@
           </tr>
         </thead>
         <tbody>
-  <tr *ngFor="let prod of productos" 
-      (click)="seleccionarProducto(prod)" 
-      style="cursor: pointer;"
-      [class.table-active]="productoSeleccionado?.id === prod.id">
-    
-    <td><strong>{{ prod.nombre }}</strong></td>
-    <td><span class="badge bg-secondary">{{ prod.categoria }}</span></td>
-    <td>${{ prod.precio_promedio | number:'1.0-2' }} COP</td>
-    <td>{{ prod.margen_actual_pct * 100 | number:'1.1-1' }}%</td>
-    <td>+{{ prod.variacion_ventas_pct * 100 | number:'1.1-1' }}%</td>
-    <td>
-      <span class="badge" [ngClass]="{
-        'bg-danger': prod.nivel_riesgo === 'ALTO',
-        'bg-warning text-dark': prod.nivel_riesgo === 'MEDIO',
-        'bg-success': prod.nivel_riesgo === 'BAJO'
-      }">
-        {{ prod.nivel_riesgo }}
-      </span>
-    </td>
-  </tr>
-</tbody>
+          <tr *ngFor="let prod of productos" 
+              (click)="seleccionarProducto(prod)" 
+              style="cursor: pointer;"
+              [class.table-active]="productoSeleccionado?.id === prod.id">
+            
+            <td><strong>{{ prod.nombre }}</strong></td>
+            <td><span class="badge bg-secondary">{{ prod.categoria }}</span></td>
+            <td>${{ prod.precio_promedio | number:'1.0-2' }} COP</td>
+            <td>{{ prod.margen_actual_pct * 100 | number:'1.1-1' }}%</td>
+            <td>+{{ prod.variacion_ventas_pct * 100 | number:'1.1-1' }}%</td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'bg-danger': prod.nivel_riesgo === 'ALTO',
+                'bg-warning text-dark': prod.nivel_riesgo === 'MEDIO',
+                'bg-success': prod.nivel_riesgo === 'BAJO'
+              }">
+                {{ prod.nivel_riesgo }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
         <ng-template #emptyState>
           <tbody>
             <tr>
@@ -118,59 +160,66 @@
           </tbody>
         </ng-template>
       </table>
+
       <div class="card mt-4 shadow-sm border-0" *ngIf="productoSeleccionado">
-  <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
-    <h5 class="mb-0">
-      <i class="cpu-icon">🤖</i> Plan de Acción IA: <strong>{{ productoSeleccionado.nombre }}</strong>
-    </h5>
-    <span class="badge px-3 py-2 fs-6" [ngClass]="{
-      'bg-danger': productoSeleccionado.nivel_riesgo === 'ALTO',
-      'bg-warning text-dark': productoSeleccionado.nivel_riesgo === 'MEDIO',
-      'bg-success': productoSeleccionado.nivel_riesgo === 'BAJO'
-    }">
-      Riesgo {{ productoSeleccionado.nivel_riesgo }}
-    </span>
-  </div>
-
-  <div class="card-body bg-light">
-    <div class="row">
-      <div class="col-md-7 d-flex flex-column justify-content-center">
-        <h6 class="text-muted uppercase text-xs font-bold mb-2">Recomendación Estratégica</h6>
-        <p class="fs-5 text-dark italic-text mb-0">
-          "{{ productoSeleccionado.recomendacion || 'Sin recomendaciones disponibles para este estado.' }}"
-        </p>
-      </div>
-
-      <div class="col-md-5 border-start ps-4">
-        <h6 class="text-muted uppercase text-xs font-bold mb-3">Métricas de Control Financiero</h6>
-        
-        <div class="d-flex justify-content-between mb-2">
-          <span>Margen Objetivo:</span>
-          <strong>{{ productoSeleccionado.margen_objetivo * 100 | number:'1.1-1' }}%</strong>
-        </div>
-        
-        <div class="d-flex justify-content-between mb-2">
-          <span>Margen Real Calculado:</span>
-          <strong>{{ productoSeleccionado.margen_actual_pct * 100 | number:'1.1-1' }}%</strong>
-        </div>
-
-        <hr class="my-2">
-
-        <div class="d-flex justify-content-between">
-          <span>Brecha de Margen:</span>
-          <span [ngClass]="{
-            'text-danger font-bold': (productoSeleccionado.margen_actual_pct - productoSeleccionado.margen_objetivo) < 0,
-            'text-success font-bold': (productoSeleccionado.margen_actual_pct - productoSeleccionado.margen_objetivo) >= 0
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+          <h5 class="mb-0">
+            <i class="cpu-icon">🤖</i> Plan de Acción IA: <strong>{{ productoSeleccionado.nombre }}</strong>
+          </h5>
+          <span class="badge px-3 py-2 fs-6" [ngClass]="{
+            'bg-danger': productoSeleccionado.nivel_riesgo === 'ALTO',
+            'bg-warning text-dark': productoSeleccionado.nivel_riesgo === 'MEDIO',
+            'bg-success': productoSeleccionado.nivel_riesgo === 'BAJO'
           }">
-            {{ (productoSeleccionado.margen_actual_pct - productoSeleccionado.margen_objetivo) * 100 | number:'1.1-1' }}%
-            <span *ngIf="(productoSeleccionado.margen_actual_pct - productoSeleccionado.margen_objetivo) < 0">⚠️</span>
-            <span *ngIf="(productoSeleccionado.margen_actual_pct - productoSeleccionado.margen_objetivo) >= 0">✅</span>
+            Riesgo {{ productoSeleccionado.nivel_riesgo }}
           </span>
+        </div>
+
+        <div class="card-body bg-light">
+          <div class="row">
+            <div class="col-md-7 d-flex flex-column justify-content-center">
+              <h6 class="text-muted uppercase text-xs font-bold mb-2">Recomendación Estratégica</h6>
+              <p class="fs-5 text-dark italic-text mb-0">
+                "{{ productoSeleccionado.recomendacion || 'Sin recomendaciones disponibles para este estado.' }}"
+              </p>
+            </div>
+
+            <div class="col-md-5 border-start ps-4">
+              <h6 class="text-muted uppercase text-xs font-bold mb-3">Métricas de Control Financiero</h6>
+              
+              <div class="d-flex justify-content-between mb-2">
+                <span>Margen Objetivo:</span>
+                <strong>{{ productoSeleccionado.margen_objetivo * 100 | number:'1.1-1' }}%</strong>
+              </div>
+              
+              <div class="d-flex justify-content-between mb-2">
+                <span>Margen Real Calculado:</span>
+                <strong>{{ productoSeleccionado.margen_actual_pct * 100 | number:'1.1-1' }}%</strong>
+              </div>
+
+              <hr class="my-2">
+
+              <div class="d-flex justify-content-between">
+                <span>Brecha de Margen:</span>
+                <span [ngClass]="{
+                  'text-danger font-bold': (productoSeleccionado.margen_actual_pct - productoSeleccionado.margen_objetivo) < 0,
+                  'text-success font-bold': (productoSeleccionado.margen_actual_pct - productoSeleccionado.margen_objetivo) >= 0
+                }">
+                  {{ (productoSeleccionado.margen_actual_pct - productoSeleccionado.margen_objetivo) * 100 | number:'1.1-1' }}%
+                  <span *ngIf="(productoSeleccionado.margen_actual_pct - productoSeleccionado.margen_objetivo) < 0">⚠️</span>
+                  <span *ngIf="(productoSeleccionado.margen_actual_pct - productoSeleccionado.margen_objetivo) >= 0">✅</span>
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
+
+  <div class="row mt-4 mb-5">
+    <div class="col-12">
+      <app-historial-ventas></app-historial-ventas>
     </div>
   </div>
 </div>
