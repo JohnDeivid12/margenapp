@@ -1,90 +1,133 @@
-/* Contenedor con un sutil gradiente de fondo */
+/* Contenedor principal con fondo degradado suave para que luzca el efecto cristal */
 .bienvenida-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
-  padding: 20px;
-  background: linear-gradient(135deg, #2769ac 0%, #e2e8f0 100%);
-  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 10% 20%, rgba(242, 245, 251, 1) 0%, rgba(225, 233, 247, 1) 90%);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 24px;
 }
 
-/* Tarjeta con Glassmorphism suave */
+/* Tarjeta estilo Neumorfismo/Glassmorphism claro */
 .bienvenida-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  padding: 40px;
   border-radius: 24px;
-  max-width: 680px;
+  max-width: 480px;
   width: 100%;
-  padding: 50px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px rgba(13, 110, 253, 0.05), 
+              0 1px 3px rgba(0, 0, 0, 0.02);
+  transform: translateY(0);
+  transition: transform 0.3s ease;
 }
 
+/* Encabezado */
 .bienvenida-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 }
 
+/* Ícono de IA con animación de flotado y pulso */
 .icono-ia {
-  font-size: 4rem;
-  display: block;
-  margin-bottom: 15px;
-  filter: drop-shadow(0 5px 5px rgba(0,0,0,0.1));
+  font-size: 3.5rem;
+  display: inline-block;
+  margin-bottom: 16px;
+  animation: float 4s ease-in-out infinite;
+  filter: drop-shadow(0 8px 16px rgba(13, 110, 253, 0.15));
 }
 
+/* Título Principal */
 .bienvenida-header h1 {
-  font-size: 2.5rem;
-  color: #1a202c;
-  margin-bottom: 10px;
+  font-size: 2.2rem;
+  color: #1e293b;
+  margin: 0 0 8px 0;
   font-weight: 800;
   letter-spacing: -0.5px;
+  line-height: 1.2;
 }
 
+/* Resalte de la Marca en Degradado */
 .bienvenida-header .marca {
-  background: linear-gradient(90deg, #0d6efd, #00d2ff);
-  background-clip: text; /* <--- AGREGA ESTA LÍNEA */
+  background: linear-gradient(135deg, #0d6efd 0%, #0a4ebd 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
+/* Subtítulo */
 .subtitulo {
-  color: #718096;
-  font-size: 1.1rem;
+  color: #64748b;
+  font-size: 1rem;
+  font-weight: 500;
 }
 
+/* Divisor sutil y moderno */
 .divisor {
-  border: 0;
-  border-top: 2px solid #edf2f7;
-  margin: 35px 0;
-  border-radius: 2px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(222, 226, 230, 0) 0%, #dee2e6 50%, rgba(222, 226, 230, 0) 100%);
+  border: none;
+  margin: 28px 0;
+}
+
+/* Secciones de contenido */
+.bienvenida-section {
+  margin-bottom: 24px;
 }
 
 .bienvenida-section h3 {
-  font-size: 1.3rem;
-  color: #2d3748;
-  margin-bottom: 15px;
-  font-weight: 700;
+  font-size: 1.15rem;
+  color: #0f172a;
+  margin-bottom: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .bienvenida-section p {
-  color: #4a5568;
-  line-height: 1.7;
-  font-size: 1rem;
+  color: #475569;
+  line-height: 1.6;
+  font-size: 0.95rem;
 }
 
+/* Lista de instrucciones estilizada */
 .lista-instrucciones {
-  padding-left: 0;
   list-style: none;
+  padding-left: 0;
+  margin: 0;
 }
 
 .lista-instrucciones li {
-  background: #40c7d1;
-  padding: 15px;
-  border-radius: 12px;
+  color: #475569;
   margin-bottom: 12px;
-  border-left: 4px solid #0d6efd;
-  color: #2d3748;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  position: relative;
+  padding-left: 24px;
+}
+
+/* Viñeta personalizada moderna para la lista */
+.lista-instrucciones li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: #0d6efd;
+  font-weight: bold;
+}
+
+/* Zona inferior de botones */
+.boton-zona {
+  text-align: center;
+  margin-top: 32px;
+}
+
+/* Animación de flotado para el ícono de IA */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
 .boton-zona {
