@@ -10,7 +10,7 @@ from typing import List, Dict, Optional
 
 class DatabaseConnection:
     """Gestor de conexión a la base de datos PostgreSQL"""
-    
+
     @staticmethod
     def obtener_conexion():
         """Crea una conexión con la base de datos PostgreSQL"""
@@ -26,33 +26,29 @@ class DatabaseConnection:
 
 class ProductoRepository:
     """Operaciones CRUD para productos"""
-    
+
     @staticmethod
     def crear(conn, nombre: str, categoria: str, precio: float, margen_objetivo: float) -> int:
         """Crea un nuevo producto y retorna su ID"""
         try:
             cursor = conn.cursor()
-            
             query = """
                 INSERT INTO productos (nombre, categoria, precio, margen_objetivo)
                 VALUES (%s, %s, %s, %s)
                 RETURNING id;
             """
-            
             cursor.execute(query, (nombre, categoria, precio, margen_objetivo))
             producto_id = cursor.fetchone()[0]
             conn.commit()
             cursor.close()
-            
             return producto_id
-        
         except psycopg2.Error as e:
             conn.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error al guardar el producto: {str(e)}"
             )
-    
+
     @staticmethod
     def obtener_todos(conn) -> List[Dict]:
         """Obtiene todos los productos"""
@@ -68,7 +64,7 @@ class ProductoRepository:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error al obtener productos: {str(e)}"
             )
-    
+
     @staticmethod
     def obtener_por_id(conn, producto_id: int) -> Optional[Dict]:
         """Obtiene un producto específico por ID"""
@@ -84,22 +80,25 @@ class ProductoRepository:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error al obtener producto: {str(e)}"
             )
-    
+
     @staticmethod
     def obtener_precio_y_margen(conn, producto_id: int) -> tuple:
         """Obtiene el precio y margen objetivo de un producto"""
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT precio, margen_objetivo FROM productos WHERE id = %s", (producto_id,))
+            cursor.execute(
+                "SELECT precio, margen_objetivo FROM productos WHERE id = %s",
+                (producto_id,),
+            )
             resultado = cursor.fetchone()
             cursor.close()
-            
+
             if not resultado:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Producto con ID {producto_id} no existe"
+                    detail=f"Producto con ID {producto_id} no existe",
                 )
-            
+
             return resultado
         except psycopg2.Error as e:
             raise HTTPException(
@@ -107,36 +106,128 @@ class ProductoRepository:
                 detail=f"Error al obtener producto: {str(e)}"
             )
 
+    @staticmethod
+    def actualizar(
+        conn,
+        producto_id: int,
+        nombre: str,
+        categoria: str,
+        precio: float,
+        margen_objetivo: float,
+    ):
+        """Actualiza un producto y recalcula su análisis financiero"""
+        try:
+            cursor = conn.cursor()
+            query = """
+                UPDATE productos
+                SET nombre = %s, categoria = %s, precio = %s, margen_objetivo = %s
+                WHERE id = %s;
+            """
+            cursor.execute(query, (nombre, categoria, precio, margen_objetivo, producto_id))
+            conn.commit()
+            cursor.close()
+
+            total_unidades, ingresos_totales = VentaRepository.obtener_metricas_por_producto(
+                conn, producto_id
+            )
+            costo_implicito = float(precio) * (1.0 - float(margen_objetivo))
+
+            if total_unidades > 0:
+                precio_promedio = float(ingresos_totales) / float(total_unidades)
+                margen_real = (
+                    (precio_promedio - costo_implicito) / precio_promedio
+                    if precio_promedio > 0
+                    else float(margen_objetivo)
+                )
+            else:
+                precio_promedio = float(precio)
+                margen_real = float(margen_objetivo)
+
+            if margen_real >= float(margen_objetivo):
+                nivel_riesgo = "BAJO"
+                recomendacion = (
+                    "✅ Riesgo bajo. Margen saludable y ventas estables. "
+                    "Mantener estrategia de precios."
+                )
+            elif margen_real >= 0.05:
+                nivel_riesgo = "MEDIO"
+                recomendacion = (
+                    "⚠️ Riesgo moderado por desviación de margen. "
+                    "Evaluar costos y limitar descuentos adicionales."
+                )
+            else:
+                nivel_riesgo = "ALTO"
+                recomendacion = (
+                    "🚨 Riesgo alto. Rentabilidad crítica. "
+                    "Se recomienda ajustar margen o renegociar costos con proveedores."
+                )
+
+            AnálisisRepository.guardar_o_actualizar(
+                conn,
+                producto_id=producto_id,
+                precio_promedio=float(precio_promedio),
+                variacion=0.0,
+                margen=float(margen_real),
+                riesgo=nivel_riesgo,
+                recomendacion=recomendacion,
+            )
+        except psycopg2.Error as e:
+            conn.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al actualizar el producto: {str(e)}",
+            )
+
+    @staticmethod
+    def eliminar(conn, producto_id: int):
+        """Elimina físicamente un producto por su ID"""
+        try:
+            cursor = conn.cursor()
+            # Borrar dependencias primero para evitar errores de clave foránea
+            cursor.execute(
+                "DELETE FROM analisis_productos WHERE producto_id = %s;",
+                (producto_id,),
+            )
+            cursor.execute(
+                "DELETE FROM ventas_diarias WHERE producto_id = %s;",
+                (producto_id,),
+            )
+            cursor.execute("DELETE FROM productos WHERE id = %s;", (producto_id,))
+            conn.commit()
+            cursor.close()
+        except psycopg2.Error as e:
+            conn.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al eliminar el producto (Verifique claves foráneas): {str(e)}",
+            )
+
 
 class VentaRepository:
     """Operaciones CRUD para ventas"""
-    
+
     @staticmethod
     def crear(conn, producto_id: int, cantidad: int, precio_aplicado: float) -> int:
         """Crea una nueva venta y retorna su ID"""
         try:
             cursor = conn.cursor()
-            
             query = """
                 INSERT INTO ventas_diarias (producto_id, cantidad, precio_aplicado, fecha_venta)
                 VALUES (%s, %s, %s, NOW())
                 RETURNING id;
             """
-            
             cursor.execute(query, (producto_id, cantidad, precio_aplicado))
             venta_id = cursor.fetchone()[0]
             conn.commit()
             cursor.close()
-            
             return venta_id
-        
         except psycopg2.Error as e:
             conn.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error al guardar la venta: {str(e)}"
             )
-    
+
     @staticmethod
     def obtener_todos(conn) -> List[Dict]:
         """Obtiene todas las ventas"""
@@ -158,7 +249,7 @@ class VentaRepository:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error al obtener ventas: {str(e)}"
             )
-    
+
     @staticmethod
     def obtener_por_producto(conn, producto_id: int) -> List[Dict]:
         """Obtiene las ventas de un producto específico"""
@@ -179,14 +270,14 @@ class VentaRepository:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error al obtener ventas del producto: {str(e)}"
             )
-    
+
     @staticmethod
     def obtener_metricas_por_producto(conn, producto_id: int) -> tuple:
         """Calcula métricas agregadas de ventas: total unidades e ingresos totales"""
         try:
             cursor = conn.cursor()
             query = """
-                SELECT 
+                SELECT
                     COALESCE(SUM(cantidad), 0) as total_unidades,
                     COALESCE(SUM(cantidad * precio_aplicado), 0) as ingresos_totales
                 FROM ventas_diarias
@@ -195,7 +286,6 @@ class VentaRepository:
             cursor.execute(query, (producto_id,))
             total_unidades, ingresos_totales = cursor.fetchone()
             cursor.close()
-            
             return int(total_unidades), float(ingresos_totales)
         except psycopg2.Error as e:
             raise HTTPException(
@@ -206,21 +296,28 @@ class VentaRepository:
 
 class AnálisisRepository:
     """Operaciones CRUD para análisis de productos"""
-    
+
     @staticmethod
-    def guardar_o_actualizar(conn, producto_id: int, precio_promedio: float, 
-                            variacion: float, margen: float, riesgo: str, recomendacion: str):
+    def guardar_o_actualizar(
+        conn,
+        producto_id: int,
+        precio_promedio: float,
+        variacion: float,
+        margen: float,
+        riesgo: str,
+        recomendacion: str,
+    ):
         """Inserta o actualiza (Upsert) el análisis de un producto"""
         try:
             cursor = conn.cursor()
             query = """
                 INSERT INTO analisis_productos (
-                    producto_id, precio_promedio, variacion_ventas_pct, margen_actual_pct, 
+                    producto_id, precio_promedio, variacion_ventas_pct, margen_actual_pct,
                     nivel_riesgo, recomendacion, fecha_analisis
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, NOW())
-                ON CONFLICT (producto_id) 
-                DO UPDATE SET 
+                ON CONFLICT (producto_id)
+                DO UPDATE SET
                     precio_promedio = EXCLUDED.precio_promedio,
                     variacion_ventas_pct = EXCLUDED.variacion_ventas_pct,
                     margen_actual_pct = EXCLUDED.margen_actual_pct,
@@ -228,13 +325,16 @@ class AnálisisRepository:
                     recomendacion = EXCLUDED.recomendacion,
                     fecha_analisis = NOW();
             """
-            cursor.execute(query, (producto_id, precio_promedio, variacion, margen, riesgo, recomendacion))
+            cursor.execute(
+                query,
+                (producto_id, precio_promedio, variacion, margen, riesgo, recomendacion),
+            )
             conn.commit()
             cursor.close()
         except psycopg2.Error as e:
             conn.rollback()
             print(f"⚠️ Error no crítico al guardar análisis: {str(e)}")
-    
+
     @staticmethod
     def obtener_por_producto(conn, producto_id: int) -> Optional[Dict]:
         """Obtiene el análisis de un producto"""
@@ -250,16 +350,16 @@ class AnálisisRepository:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error al obtener análisis: {str(e)}"
             )
-    
+
     @staticmethod
     def obtener_todos_con_productos(conn) -> List[Dict]:
         """Obtiene todos los productos con su análisis (LEFT JOIN)"""
         try:
             cursor = conn.cursor(cursor_factory=RealDictCursor)
             query = """
-                SELECT 
-                    p.id, 
-                    p.nombre, 
+                SELECT
+                    p.id,
+                    p.nombre,
                     p.categoria,
                     p.precio,
                     p.margen_objetivo,

@@ -1,0 +1,63 @@
+<div class="card border-warning shadow-sm mb-4">
+  <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">✏️ Editar Parámetros de Rentabilidad: {{ producto?.nombre }}</h5>
+    <button type="button" class="btn-close text-reset" aria-label="Close" (click)="cancelar()"></button>
+  </div>
+  
+  <div class="card-body">
+    <form [formGroup]="form" (ngSubmit)="enviarFormulario()">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label fw-bold small text-muted">Nombre del Producto</label>
+          <input type="text" class="form-control" formControlName="nombre" 
+                 [class.is-invalid]="tieneError('nombre', 'required') || tieneError('nombre', 'maxlength')">
+          <div class="invalid-feedback" *ngIf="form.get('nombre')?.touched">
+            {{ obtenerMensajeError('nombre') }}
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-bold small text-muted">Categoría</label>
+          <input type="text" class="form-control" formControlName="categoria"
+                 [class.is-invalid]="tieneError('categoria', 'required') || tieneError('categoria', 'maxlength')">
+          <div class="invalid-feedback" *ngIf="form.get('categoria')?.touched">
+            {{ obtenerMensajeError('categoria') }}
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-bold small text-muted">Precio Sugerido ($)</label>
+          <input type="number" class="form-control" formControlName="precio" step="0.01"
+                 [class.is-invalid]="tieneError('precio', 'required') || tieneError('precio', 'min')">
+          <div class="invalid-feedback" *ngIf="form.get('precio')?.touched">
+            {{ obtenerMensajeError('precio') }}
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-bold small text-muted">Margen Objetivo</label>
+          <input type="number" class="form-control" formControlName="margen_objetivo" step="0.01"
+                 [class.is-invalid]="tieneError('margen_objetivo', 'required') || tieneError('margen_objetivo', 'min') || tieneError('margen_objetivo', 'max')">
+          <div class="invalid-feedback" *ngIf="form.get('margen_objetivo')?.touched">
+            {{ obtenerMensajeError('margen_objetivo') }}
+          </div>
+          <span class="form-text text-muted small">Ej: 0.20 para 20%</span>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end gap-2">
+          <button type="submit" class="btn btn-warning text-dark fw-bold w-100" [disabled]="form.invalid || cargando">
+            <span *ngIf="cargando" class="spinner-border spinner-border-sm me-1" role="status"></span>
+            Actualizar
+          </button>
+          <button type="button" class="btn btn-outline-secondary w-100" (click)="cancelar()">
+            Cancelar
+          </button>
+        </div>
+      </div>
+
+      <div class="alert alert-danger d-flex align-items-center mt-3" role="alert" *ngIf="error">
+        <div>⚠️ {{ error }}</div>
+      </div>
+    </form>
+  </div>
+</div>
